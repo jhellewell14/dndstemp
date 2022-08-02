@@ -10,7 +10,7 @@ library(seqinr)
 source("generate_data.R")
 
 # Read alignment
-data <- seqinr::read.alignment(file = "fits/porB3/porB3.carriage.noindels.txt", format = "fasta")
+data <- seqinr::read.alignment(file = "fits/porB/porB3.carriage.noindels.txt", format = "fasta")
 # Create list of data for stan
 # data_list$X is the codon counts at each location
 data_list <- generate_data(data)
