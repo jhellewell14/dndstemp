@@ -598,81 +598,81 @@ functions {
     return sum(lv);
   }
   
-  real partial_sum(array[] int X_slice,
-  int start, int end,
-  row_vector pi_eq,
-  vector mu,
-  vector omega,
-  vector kappa,
-  array[,] int X) {
-    
-    real m_AA;
-    matrix[61, 61] m_AB;
-    matrix[61, 61] mutmat;
-    matrix[61, 61] V;
-    matrix[61, 61] Va;
-    vector[61] D;
-    matrix[61, 61] V_inv;
-    vector[61] logvec;
-    vector[end - start + 1] lv;
-    int z = 1; 
-    real sqp;
-    real mABs, sobs;
-    row_vector[61] obs;
-    
-    for(loc in start:end){
-      // Calculate substitution rate matrix
-      profile("mutmat") {
-        mutmat = PDRM(mu[loc], kappa[loc], omega[loc], pi_eq);
-      }
-      
-      // Eigenvectors/values of substitution rate matrix
-      profile("eigen") {
-        V = eigenvectors_sym(mutmat);
-        D = 1 / (1 - eigenvalues_sym(mutmat));
-        V_inv = diag_post_multiply(V, D);
-      }
-      
-      profile("m_AB"){
-        // Create m_AB for each ancestral codon
-        for(i in 1:61) {
-          Va = rep_matrix(row(V, i), 61);
-          m_AB[i, ] = to_row_vector(rows_dot_product(Va, V_inv));
-        }
-      }
-      // Add equilibrium frequencies
-      for(i in 1:61){
-        sqp = sqrt(pi_eq[i]);
-        m_AB[i, ] /= sqp;
-        m_AB[, i] *= sqp;
-      }
-      
-      // Normalise by m_AA
-      for(i in 1:61){
-        m_AA = m_AB[i, i];
-        for(j in 1:61){
-          if(j != i){
-            m_AB[i, j] /= m_AA;
-          }
-        }
-      }
-      
-      // Likelihood calculation
-      profile("likelihood"){
-        obs = to_row_vector(X[loc,]);
-        sobs = sum(obs);
-        for(i in 1:61){
-          mABs = sum(m_AB[i, ]);
-          logvec[i] = (lgamma(mABs) + sum(lgamma(m_AB[i, ] + obs)) - lgamma(mABs + sobs) - sum(lgamma(m_AB[i, ])));
-        }
-      }
-      // Sum likelihood over all ancestors
-      lv[z] = sum(logvec);
-      z += 1;
-    }
-    
-    return sum(lv);
-  }
+  // real partial_sum(array[] int X_slice,
+  // int start, int end,
+  // row_vector pi_eq,
+  // vector mu,
+  // vector omega,
+  // vector kappa,
+  // array[,] int X) {
+  //   
+  //   real m_AA;
+  //   matrix[61, 61] m_AB;
+  //   matrix[61, 61] mutmat;
+  //   matrix[61, 61] V;
+  //   matrix[61, 61] Va;
+  //   vector[61] D;
+  //   matrix[61, 61] V_inv;
+  //   vector[61] logvec;
+  //   vector[end - start + 1] lv;
+  //   int z = 1; 
+  //   real sqp;
+  //   real mABs, sobs;
+  //   row_vector[61] obs;
+  //   
+  //   for(loc in start:end){
+  //     // Calculate substitution rate matrix
+  //     profile("mutmat") {
+  //       mutmat = PDRM(mu[loc], kappa[loc], omega[loc], pi_eq);
+  //     }
+  //     
+  //     // Eigenvectors/values of substitution rate matrix
+  //     profile("eigen") {
+  //       V = eigenvectors_sym(mutmat);
+  //       D = 1 / (1 - eigenvalues_sym(mutmat));
+  //       V_inv = diag_post_multiply(V, D);
+  //     }
+  //     
+  //     profile("m_AB"){
+  //       // Create m_AB for each ancestral codon
+  //       for(i in 1:61) {
+  //         Va = rep_matrix(row(V, i), 61);
+  //         m_AB[i, ] = to_row_vector(rows_dot_product(Va, V_inv));
+  //       }
+  //     }
+  //     // Add equilibrium frequencies
+  //     for(i in 1:61){
+  //       sqp = sqrt(pi_eq[i]);
+  //       m_AB[i, ] /= sqp;
+  //       m_AB[, i] *= sqp;
+  //     }
+  //     
+  //     // Normalise by m_AA
+  //     for(i in 1:61){
+  //       m_AA = m_AB[i, i];
+  //       for(j in 1:61){
+  //         if(j != i){
+  //           m_AB[i, j] /= m_AA;
+  //         }
+  //       }
+  //     }
+  //     
+  //     // Likelihood calculation
+  //     profile("likelihood"){
+  //       obs = to_row_vector(X[loc,]);
+  //       sobs = sum(obs);
+  //       for(i in 1:61){
+  //         mABs = sum(m_AB[i, ]);
+  //         logvec[i] = (lgamma(mABs) + sum(lgamma(m_AB[i, ] + obs)) - lgamma(mABs + sobs) - sum(lgamma(m_AB[i, ])));
+  //       }
+  //     }
+  //     // Sum likelihood over all ancestors
+  //     lv[z] = sum(logvec);
+  //     z += 1;
+  //   }
+  //   
+  //   return sum(lv);
+  // }
   
   // substitution rate matrix
   matrix PDRM(real mu, real kappa, real omega, row_vector pi_eq) {
