@@ -10,10 +10,9 @@ data {
 } 
 
 parameters {
-  real <lower = 0> om;
-  real <lower = 0> kap;
-  real <lower = 0> theta;
-  // real <lower = 0> muu;
+  real om;
+  real kap;
+  real th;
 }
 
 transformed parameters {
@@ -29,11 +28,14 @@ transformed parameters {
   real sqp;
   real meanrate = 0;
   real scale;
+  real omega = exp(om);
+  real kappa = exp(kap);
+  real theta = exp(th);
   
   profile("mats"){
   // Build mutation rate matrix under neutrality
   // https://github.com/danny-wilson/genomegaMap/blob/659802ef273af54e1b69af77dcfae210eb250e3f/src/genomegaMap/Utilities/mutation.cpp#L1448
-  A = build_A(1, kap, 1, pi_eq);
+  A = build_A(1, kappa, 1, pi_eq);
   
   // Calculate mean rate
   // https://github.com/danny-wilson/genomegaMap/blob/659802ef273af54e1b69af77dcfae210eb250e3f/src/genomegaMap/Utilities/mutation.cpp#L1451
@@ -46,9 +48,9 @@ transformed parameters {
   // not under neutrality
   // https://github.com/danny-wilson/genomegaMap/blob/659802ef273af54e1b69af77dcfae210eb250e3f/src/genomegaMap/Utilities/mutation.cpp#L1458
   // mutmat = PDRM(mu, kap, om, pi_eq); (old)
-  mutmat = build_A(1, kap, om, pi_eq);
+  mutmat = build_A(1, kappa, omega, pi_eq);
   }
-  
+
   // Eigenvectors/values of substitution rate matrix
   V = eigenvectors_sym(mutmat);
   // D = 1 / (1 - eigenvalues_sym(mutmat)); (old)
@@ -83,6 +85,7 @@ transformed parameters {
         m_AB[i, j] = 1.0e-06;
       }
     }
+    m_AB[i, i] = 1.0e-06;
   }
   
 }
@@ -95,12 +98,6 @@ model {
   X);
 
   kap ~ normal(0, 1);
-  theta ~ normal(0, 1);
+  th ~ normal(0, 1);
   om ~ normal(0, 1);
-}
-
-generated quantities {
-  real kappa = kap;
-  // real mu = theta;
-  real omega = om;
 }

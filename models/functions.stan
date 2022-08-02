@@ -1,5 +1,12 @@
 functions {
   
+  real dirichlet_multinomial_lpmf(array[] int y, vector alpha) {
+    real alpha_plus = sum(alpha);
+    return lgamma(alpha_plus) + sum(lgamma(alpha + to_vector(y)))
+    - lgamma(alpha_plus+sum(y)) - sum(lgamma(alpha));
+  }
+  
+  
   // Copied from Danny's code
   // https://github.com/danny-wilson/genomegaMap/blob/659802ef273af54e1b69af77dcfae210eb250e3f/src/genomegaMap/Utilities/mutation.cpp#L1143
   matrix build_A(real mu, real kappa, real omega, row_vector pi_eq) {
@@ -577,17 +584,18 @@ functions {
     for(loc in start:end){
       // Likelihood calculation
       profile("likelihood"){
-        obs = to_row_vector(X[loc,]);
-        n = sum(obs);
+        // obs = to_row_vector(X[loc,]);
+        // n = sum(obs);
         for(i in 1:61){
-          mAB = m_AB[i, ]; 
-          mABs = sum(m_AB[i, ]);
-          // Dirichlet-multinomial lpmf for this ancestral codon
-          ll = - (lgamma(mABs + n) - lgamma(mABs));
-          for(k in 1:61){
-            ll += (lgamma(mAB[k] + obs[k]) - lgamma(mAB[k]));
-          }
-          logvec[i] = ll;
+          // mAB = m_AB[i, ]; 
+          // mABs = sum(m_AB[i, ]);
+          // // Dirichlet-multinomial lpmf for this ancestral codon
+          // ll = - (lgamma(mABs + n) - lgamma(mABs));
+          // for(k in 1:61){
+          //   ll += (lgamma(mAB[k] + obs[k]) - lgamma(mAB[k]));
+          // }
+          // logvec[i] = ll;
+          logvec[i] = dirichlet_multinomial_lpmf(X[loc, ] | to_vector(m_AB[i, ]));
         }
       }
       // Sum likelihood over all ancestors
@@ -1224,12 +1232,7 @@ functions {
     return(M);
   }
   
-    // real dirichlet_multinomial_lpmf(array[] int y, vector alpha) {
-  //   real alpha_plus = sum(alpha);
-  //   return lgamma(alpha_plus) + sum(lgamma(alpha + to_vector(y)))
-  //   - lgamma(alpha_plus+sum(y)) - sum(lgamma(alpha));
-  // }
-  
+
   
   // real partial_sum_wild(array[] int X_slice,
   // int start, int end,
