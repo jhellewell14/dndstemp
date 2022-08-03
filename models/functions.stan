@@ -6,6 +6,17 @@ functions {
     - lgamma(alpha_plus+sum(y)) - sum(lgamma(alpha));
   }
   
+//   mydouble& operator+=(const mydouble &mydbl) {
+// 		if(_zero) *this = mydbl;
+// 		else if(!mydbl._zero) {
+// 			double diff = _log - mydbl._log;
+// 			if(diff==0.0) _log += log(2.0);
+// 			else if(diff<0.0) _log = mydbl._log + log(1.0 + exp(diff));
+// 			else _log += log(1.0 + exp(-diff));
+// 		}
+// 		return *this;
+// 	}
+  // x += y
   real sillyplus(real x, real y) {
     real a;
     if(x == 0){
@@ -33,11 +44,11 @@ functions {
   
   real sillymult(real x, real y) {
     real a;
-    if(y == 0 || x == 0){
-      a = 0;
-    }else{
+    // if(y == 0 || x == 0){
+      // a = 0;
+    // }else{
       a = x + y;
-    }
+    // }
     return a;
   }
   

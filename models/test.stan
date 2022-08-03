@@ -38,13 +38,14 @@ generated quantities {
   // real mABs;
   real scale;
   vector[l] likpos = rep_vector(0, l);
-  real lik = 1.0;
+  real lik = 0; // log(1)
   real likposanc;
   real cti;
   real phi;
   real N;
   real muti;
   real ttheta;
+  // int pos = 1;
   
   
   A = build_A(1, kappa, 1, pi_eq);
@@ -124,9 +125,10 @@ generated quantities {
       
       likposanc += lgamma(ttheta) - lgamma(N + ttheta) - log(N + ttheta) + log(ttheta);
       likpos[pos] = sillyplus(likpos[pos], likposanc);
+      // likpos[pos] += likposanc;
     }
-   likpos[pos] = sillymult(likpos[pos], phi);
-   // lik = sillymult(lik, likpos[pos]);
+   // likpos[pos] = sillymult(likpos[pos], phi);
+   likpos[pos] += phi;
    lik += likpos[pos];
   }
 }

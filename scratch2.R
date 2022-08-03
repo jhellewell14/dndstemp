@@ -20,11 +20,13 @@ fit <- mod$sample(
   chains = 1, 
   fixed_param = TRUE
 )
-sum(as.vector(fit$draws("likpos")))
+y <- as.vector(fit$draws("likpos"))
+matrixStats::logSumExp(y)
 as.vector(fit$draws("lik"))
 # Likelihood at each position
-as.vector(fit$draws("lik_full"))
+
 as.vector(fit$draws("phi"))
+as.vector(fit$draws("likposanc"))
 # Sum of likelihood over all positions
 
 
