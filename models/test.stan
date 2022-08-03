@@ -27,7 +27,7 @@ generated quantities {
   matrix[61, 61] mutmat = PDRM(mu, kappa, omega, pi_eq);
   matrix[61, 61] V;
   matrix[61, 61] V_inv;
-  vector[61] D;
+  // vector[61] D;
   vector[61] E;
   matrix[61, 61] Va;
   matrix[61, 61] m_AB;
@@ -35,12 +35,11 @@ generated quantities {
   real m_AA;
   real sqp;
   real meanrate = 0;
-  real mABs;
+  // real mABs;
   real scale;
-  matrix[61, l] likpos= rep_matrix(0, 61, l);
-  real lik = 1;
+  vector[l] likpos = rep_vector(0, l);
+  real lik = 1.0;
   real likposanc;
-  vector[l] lik_full;
   real cti;
   real phi;
   real N;
@@ -60,7 +59,7 @@ generated quantities {
   
   // Eigenvectors/values of substitution rate matrix
   V = eigenvectors_sym(mutmat);
-  D = 1 / (1 - eigenvalues_sym(mutmat));
+  // D = 1 / (1 - eigenvalues_sym(mutmat));
   E = 1 / (1 - 2 * scale * eigenvalues_sym(mutmat));
   // lambda/(lambda-2.0*scale*SymEigenval[i])
   V_inv = diag_post_multiply(V, E);
@@ -89,10 +88,12 @@ generated quantities {
         m_AB[i, j] = 1.0e-06;
       }
     }
+    m_AB[i, i] = 1.0e-06;
   }
   
   // Likelihood calculation
   for(pos in 1:l) {
+    
     phi = 0;
     N = 0;
     
@@ -106,8 +107,7 @@ generated quantities {
     
     for(anc in 1:61){
       
-      // likposanc = log(pi_eq[anc]);
-      likposanc = 0;
+      likposanc = log(pi_eq[anc]);
       ttheta = 0;
       
       for(i in 1:61){
@@ -121,17 +121,14 @@ generated quantities {
           likposanc += lgamma(cti + muti) - lgamma(muti);
         }
       }
-      likposanc += lgamma(ttheta) - lgamma(N + ttheta) - log(N + ttheta) + log(ttheta);
-      likpos[anc, pos] += likposanc;
       
+      likposanc += lgamma(ttheta) - lgamma(N + ttheta) - log(N + ttheta) + log(ttheta);
+      likpos[pos] = sillyplus(likpos[pos], likposanc);
     }
-    lik_full[pos] = log_sum_exp(likpos[, pos] + to_vector(log(pi_eq)));
-    // 
-    // likpos[pos] += phi;
-    // lik += likpos[pos];
+   likpos[pos] = sillymult(likpos[pos], phi);
+   // lik = sillymult(lik, likpos[pos]);
+   lik += likpos[pos];
   }
-  lik = sum(lik_full);
-  // lik = log_sum_exp(lik_full);
 }
 
 

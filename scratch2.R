@@ -20,11 +20,13 @@ fit <- mod$sample(
   chains = 1, 
   fixed_param = TRUE
 )
-
+sum(as.vector(fit$draws("likpos")))
+as.vector(fit$draws("lik"))
 # Likelihood at each position
 as.vector(fit$draws("lik_full"))
+as.vector(fit$draws("phi"))
 # Sum of likelihood over all positions
-as.vector(fit$draws("lik"))
+
 
 # m_AB <- matrix(fit$draws(variables = "m_AB", format = "matrix"), byrow = TRUE, nrow = 61)
 # plot(x = 1:61,y = rowMeans(replicate(expr = gtools::rdirichlet(n = 1, alpha = m_AB[1,]),                                      
@@ -45,26 +47,26 @@ as.vector(fit$draws("lik"))
 # 
 # rbind(m_AB[57,], data_list$X[lc,])
 # 
-# fitfn <- function(x){
-#   print(x)
-#   fit <- mod$sample(
-#     data = list(theta = x[1], omega = x[2], kappa = x[3], pi_eq = rep(1/61, 61), mu = 1,
-#                 X = data_list$X, l = data_list$l),
-#     iter_warmup = 0, 
-#     iter_sampling = 1,
-#     threads_per_chain = 1,
-#     chains = 1, 
-#     fixed_param = TRUE
-#   )
-#   return(sum(as.vector(fit$draws("logvec", format = "matrix"))))
-# }
-# 
-# 
-# optim(par = c(1, 1, 1), fn = fitfn, 
-#       control = list(fnscale = -1),
-#       lower = c(0.01, 0.1, 0.1), 
-#       upper = c(2, 5, 5),
-#       method = "L-BFGS-B")
+fitfn <- function(x){
+  print(x)
+  fit <- mod$sample(
+    data = list(theta = x[1], omega = x[2], kappa = x[3], pi_eq = rep(1/61, 61), mu = 1,
+                X = data_list$X, l = data_list$l),
+    iter_warmup = 0,
+    iter_sampling = 1,
+    threads_per_chain = 1,
+    chains = 1,
+    fixed_param = TRUE
+  )
+  return(as.vector(fit$draws("lik", format = "matrix")))
+}
+
+
+optim(par = c(1, 1, 1), fn = fitfn,
+      control = list(fnscale = -1),
+      lower = c(0.01, 0.1, 0.1),
+      upper = c(2, 5, 5),
+      method = "L-BFGS-B")
 # 
 # ?optim
 # M <- matrix(as.vector(fit$draws(variables = "mutmat", format = "matrix")), byrow = TRUE, nrow = 61)
