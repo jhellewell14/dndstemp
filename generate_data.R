@@ -147,6 +147,7 @@ initfn <- function(){
        omega_scale = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
        mu_loc = rnorm(n = 1, mean = 0, sd = 1),
        mu_scale = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
+       theta = runif(1, 0.01, 0.2),
        kappa_loc = rnorm(n = 1, mean = 0, sd = 1),
        kappa_scale = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1))
 }
