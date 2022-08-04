@@ -56,7 +56,7 @@ functions {
   // https://github.com/danny-wilson/genomegaMap/blob/659802ef273af54e1b69af77dcfae210eb250e3f/src/genomegaMap/Utilities/mutation.cpp#L1143
   matrix build_A(real mu, real kappa, real omega, row_vector pi_eq) {
     matrix[61,61] M = rep_matrix(0.,61,61);
-    real sqp;
+    real sqp, notrowsum;
     
     M[1,2] = kappa;
     M[1,3] = omega;
@@ -602,11 +602,21 @@ functions {
       }
     }
     
-    for(i in 1:61){
-      for(j in 1:61){ 
-        M[i, i] -= M[i, j]*sqrt(pi_eq[j] * pi_eq[i]);
-      }
-    }
+    // for(i in 1:61){
+    //   for(j in 1:61){ 
+    //     M[i, i] -= M[i, j]*sqrt(pi_eq[j] * pi_eq[i]);
+    //   }
+    // }
+    
+    /*Compute the diagonal*/
+  /*Bug fix 25 April 2018: A is not a regular rate matrix. Its diagonal matches that of the rate matrix*/
+  for(i in 1:61) {
+    notrowsum=0.0;
+    for(j in 1:61){
+      notrowsum+= M[i, j] * sqrt(pi_eq[j] / pi_eq[i]);
+    } 
+    M[i, i] = -notrowsum;
+  }
     
     // Compute the diagonal
     // M = add_diag(M, -(M * rep_vector(1, 61)));

@@ -12,7 +12,7 @@ mod <- cmdstan_model("models/test.stan",
 
 
 fit <- mod$sample(
-  data = list(pi_eq = rep(1/61, 61), mu = 1, omega = 1, kappa = 1, theta = 0.17000,
+  data = list(pi_eq = rep(1/61, 61), mu = 1, omega = 1.27527, kappa = 2.72392, theta = 0.0878761,
               X = data_list$X, l = data_list$l),
   iter_warmup = 0, 
   iter_sampling = 1,
@@ -21,7 +21,7 @@ fit <- mod$sample(
   fixed_param = TRUE
 )
 y <- as.vector(fit$draws("likpos"))
-matrixStats::logSumExp(y)
+
 as.vector(fit$draws("lik"))
 # Likelihood at each position
 
@@ -30,7 +30,10 @@ as.vector(fit$draws("likposanc"))
 # Sum of likelihood over all positions
 
 
-# m_AB <- matrix(fit$draws(variables = "m_AB", format = "matrix"), byrow = TRUE, nrow = 61)
+m_AB <- matrix(fit$draws(variables = "m_AB", format = "matrix"), byrow = TRUE, nrow = 61)
+mutmat <- matrix(fit$draws(variables = "mutmat", format = "matrix"), byrow = TRUE, nrow = 61)
+V <- matrix(fit$draws(variables = "V", format = "matrix"), byrow = TRUE, nrow = 61)
+Ve <- as.vector(fit$draws(variables = "Ve", format = "matrix"))
 # plot(x = 1:61,y = rowMeans(replicate(expr = gtools::rdirichlet(n = 1, alpha = m_AB[1,]),                                      
 #                                      n = 1000, simplify = "matrix")), ylim = c(0,1))
 # fit$draws("log_lik")

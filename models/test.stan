@@ -29,6 +29,7 @@ generated quantities {
   matrix[61, 61] V_inv;
   // vector[61] D;
   vector[61] E;
+  vector[61] Ve;
   matrix[61, 61] Va;
   matrix[61, 61] m_AB;
   matrix[61, 61] A;
@@ -56,10 +57,11 @@ generated quantities {
   scale = (theta / 2.0) / meanrate;
   // Calculate substitution rate matrix
   // mutmat = PDRM(mu, kap, om, pi_eq);
-  mutmat = build_A(1, kappa, omega, pi_eq);
+  mutmat = build_A(1, kappa, omega, pi_eq); 
   
   // Eigenvectors/values of substitution rate matrix
   V = eigenvectors_sym(mutmat);
+  Ve = eigenvalues_sym(mutmat);
   // D = 1 / (1 - eigenvalues_sym(mutmat));
   E = 1 / (1 - 2 * scale * eigenvalues_sym(mutmat));
   // lambda/(lambda-2.0*scale*SymEigenval[i])
