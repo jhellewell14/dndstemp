@@ -1,36 +1,5 @@
 functions {
   
-  // Replicates mydouble type arithmetic from Danny's code
-  real sillyplus(real x, real y) {
-    real a;
-    if(x == 0){
-      a = y;
-    }else if(y == 0){
-      a = x;
-    }else{
-      real diff = x - y;
-      if(diff == 0){
-        a = log(2.0) + x;
-      }else if(diff < 0){
-        a = y + log(1.0 + exp(diff));
-      }else{
-        a = x + log(1.0 + exp(-diff));
-      }
-    }
-    return a;
-  }
-  
-  
-  real sillymult(real x, real y) {
-    real a;
-    // if(y == 0 || x == 0){
-      // a = 0;
-      // }else{
-        a = x + y;
-        // }
-        return a;
-  }
-  
   matrix build_A(real kappa, real omega, matrix pimat, matrix pimult) {
     matrix[61, 61] M = rep_matrix(0.,61,61);
     real notrowsum;
@@ -576,42 +545,485 @@ functions {
     return(M);
   }
   
-  real partial_sum_constant(array[] int X_slice,
-  int start, int end,
-  matrix m_AB,
-  array[,] int X) {
+  // Updates a previous built mutation rate matrix with a different omega value
+  matrix update_A(matrix M, real omega, matrix pimult) {
+    matrix[61, 61] Mout = M;
+    // Update all omega entries
     
-    vector[61] logvec;
-    vector[end - start + 1] lv;
-    int z = 1; 
-    real sqp, mABs, n, ll;
-    row_vector[61] mAB;
-    row_vector[61] obs;
-    
-    for(loc in start:end){
-      // Likelihood calculation
-      profile("likelihood"){
-        // obs = to_row_vector(X[loc,]);
-        // n = sum(obs);
-        for(i in 1:61){
-          // mAB = m_AB[i, ]; 
-          // mABs = sum(m_AB[i, ]);
-          // // Dirichlet-multinomial lpmf for this ancestral codon
-          // ll = - (lgamma(mABs + n) - lgamma(mABs));
-          // for(k in 1:61){
-            //   ll += (lgamma(mAB[k] + obs[k]) - lgamma(mAB[k]));
-            // }
-            // logvec[i] = ll;
-            // logvec[i] = dirichlet_multinomial_lpmf(X[loc, ] | to_vector(m_AB[i, ]));
-        }
-      }
-      // Sum likelihood over all ancestors
-      lv[z] = sum(logvec);
-      z += 1;
+    Mout[1,3] *= omega;
+    Mout[1,4] *= omega;
+    Mout[1,5] *= omega;
+    Mout[1,9] *= omega;
+    Mout[1,11] *= omega;
+    Mout[1,14] *= omega;
+    Mout[1,30] *= omega;
+    Mout[1,46] *= omega;
+    Mout[2,3] *= omega;
+    Mout[2,4] *= omega;
+    Mout[2,6] *= omega;
+    Mout[2,10] *= omega;
+    Mout[2,12] *= omega;
+    Mout[2,15] *= omega;
+    Mout[2,31] *= omega;
+    Mout[2,47] *= omega;
+    Mout[3,1] *= omega;
+    Mout[3,2] *= omega;
+    Mout[3,7] *= omega;
+    Mout[3,32] *= omega;
+    Mout[3,48] *= omega;
+    Mout[4,1] *= omega;
+    Mout[4,2] *= omega;
+    Mout[4,8] *= omega;
+    Mout[4,13] *= omega;
+    Mout[4,33] *= omega;
+    Mout[4,49] *= omega;
+    Mout[5,1] *= omega;
+    Mout[5,9] *= omega;
+    Mout[5,11] *= omega;
+    Mout[5,18] *= omega;
+    Mout[5,34] *= omega;
+    Mout[5,50] *= omega;
+    Mout[6,2] *= omega;
+    Mout[6,10] *= omega;
+    Mout[6,12] *= omega;
+    Mout[6,19] *= omega;
+    Mout[6,35] *= omega;
+    Mout[6,51] *= omega;
+    Mout[7,3] *= omega;
+    Mout[7,20] *= omega;
+    Mout[7,36] *= omega;
+    Mout[7,52] *= omega;
+    Mout[8,4] *= omega;
+    Mout[8,13] *= omega;
+    Mout[8,21] *= omega;
+    Mout[8,37] *= omega;
+    Mout[8,53] *= omega;
+    Mout[9,1] *= omega;
+    Mout[9,5] *= omega;
+    Mout[9,11] *= omega;
+    Mout[9,22] *= omega;
+    Mout[9,38] *= omega;
+    Mout[9,54] *= omega;
+    Mout[10,2] *= omega;
+    Mout[10,6] *= omega;
+    Mout[10,12] *= omega;
+    Mout[10,23] *= omega;
+    Mout[10,39] *= omega;
+    Mout[10,55] *= omega;
+    Mout[11,1] *= omega;
+    Mout[11,5] *= omega;
+    Mout[11,9] *= omega;
+    Mout[11,13] *= omega;
+    Mout[11,26] *= omega;
+    Mout[11,42] *= omega;
+    Mout[11,58] *= omega;
+    Mout[12,2] *= omega;
+    Mout[12,6] *= omega;
+    Mout[12,10] *= omega;
+    Mout[12,13] *= omega;
+    Mout[12,27] *= omega;
+    Mout[12,43] *= omega;
+    Mout[12,59] *= omega;
+    Mout[13,4] *= omega;
+    Mout[13,8] *= omega;
+    Mout[13,11] *= omega;
+    Mout[13,12] *= omega;
+    Mout[13,29] *= omega;
+    Mout[13,45] *= omega;
+    Mout[13,61] *= omega;
+    Mout[14,1] *= omega;
+    Mout[14,18] *= omega;
+    Mout[14,22] *= omega;
+    Mout[14,26] *= omega;
+    Mout[14,30] *= omega;
+    Mout[14,46] *= omega;
+    Mout[15,2] *= omega;
+    Mout[15,19] *= omega;
+    Mout[15,23] *= omega;
+    Mout[15,27] *= omega;
+    Mout[15,31] *= omega;
+    Mout[15,47] *= omega;
+    Mout[16,20] *= omega;
+    Mout[16,24] *= omega;
+    Mout[16,28] *= omega;
+    Mout[16,32] *= omega;
+    Mout[16,48] *= omega;
+    Mout[17,21] *= omega;
+    Mout[17,25] *= omega;
+    Mout[17,29] *= omega;
+    Mout[17,33] *= omega;
+    Mout[17,49] *= omega;
+    Mout[18,5] *= omega;
+    Mout[18,14] *= omega;
+    Mout[18,22] *= omega;
+    Mout[18,26] *= omega;
+    Mout[18,34] *= omega;
+    Mout[18,50] *= omega;
+    Mout[19,6] *= omega;
+    Mout[19,15] *= omega;
+    Mout[19,23] *= omega;
+    Mout[19,27] *= omega;
+    Mout[19,35] *= omega;
+    Mout[19,51] *= omega;
+    Mout[20,7] *= omega;
+    Mout[20,16] *= omega;
+    Mout[20,24] *= omega;
+    Mout[20,28] *= omega;
+    Mout[20,36] *= omega;
+    Mout[20,52] *= omega;
+    Mout[21,8] *= omega;
+    Mout[21,17] *= omega;
+    Mout[21,25] *= omega;
+    Mout[21,29] *= omega;
+    Mout[21,37] *= omega;
+    Mout[21,53] *= omega;
+    Mout[22,9] *= omega;
+    Mout[22,14] *= omega;
+    Mout[22,18] *= omega;
+    Mout[22,24] *= omega;
+    Mout[22,25] *= omega;
+    Mout[22,26] *= omega;
+    Mout[22,38] *= omega;
+    Mout[22,54] *= omega;
+    Mout[23,10] *= omega;
+    Mout[23,15] *= omega;
+    Mout[23,19] *= omega;
+    Mout[23,24] *= omega;
+    Mout[23,25] *= omega;
+    Mout[23,27] *= omega;
+    Mout[23,39] *= omega;
+    Mout[23,55] *= omega;
+    Mout[24,16] *= omega;
+    Mout[24,20] *= omega;
+    Mout[24,22] *= omega;
+    Mout[24,23] *= omega;
+    Mout[24,28] *= omega;
+    Mout[24,40] *= omega;
+    Mout[24,56] *= omega;
+    Mout[25,17] *= omega;
+    Mout[25,21] *= omega;
+    Mout[25,22] *= omega;
+    Mout[25,23] *= omega;
+    Mout[25,29] *= omega;
+    Mout[25,41] *= omega;
+    Mout[25,57] *= omega;
+    Mout[26,11] *= omega;
+    Mout[26,14] *= omega;
+    Mout[26,18] *= omega;
+    Mout[26,22] *= omega;
+    Mout[26,42] *= omega;
+    Mout[26,58] *= omega;
+    Mout[27,12] *= omega;
+    Mout[27,15] *= omega;
+    Mout[27,19] *= omega;
+    Mout[27,23] *= omega;
+    Mout[27,43] *= omega;
+    Mout[27,59] *= omega;
+    Mout[28,16] *= omega;
+    Mout[28,20] *= omega;
+    Mout[28,24] *= omega;
+    Mout[28,60] *= omega;
+    Mout[29,13] *= omega;
+    Mout[29,17] *= omega;
+    Mout[29,21] *= omega;
+    Mout[29,25] *= omega;
+    Mout[29,61] *= omega;
+    Mout[30,1] *= omega;
+    Mout[30,14] *= omega;
+    Mout[30,33] *= omega;
+    Mout[30,34] *= omega;
+    Mout[30,38] *= omega;
+    Mout[30,42] *= omega;
+    Mout[30,46] *= omega;
+    Mout[31,2] *= omega;
+    Mout[31,15] *= omega;
+    Mout[31,33] *= omega;
+    Mout[31,35] *= omega;
+    Mout[31,39] *= omega;
+    Mout[31,43] *= omega;
+    Mout[31,47] *= omega;
+    Mout[32,3] *= omega;
+    Mout[32,16] *= omega;
+    Mout[32,33] *= omega;
+    Mout[32,36] *= omega;
+    Mout[32,40] *= omega;
+    Mout[32,44] *= omega;
+    Mout[32,48] *= omega;
+    Mout[33,4] *= omega;
+    Mout[33,17] *= omega;
+    Mout[33,30] *= omega;
+    Mout[33,31] *= omega;
+    Mout[33,32] *= omega;
+    Mout[33,37] *= omega;
+    Mout[33,41] *= omega;
+    Mout[33,45] *= omega;
+    Mout[33,49] *= omega;
+    Mout[34,5] *= omega;
+    Mout[34,18] *= omega;
+    Mout[34,30] *= omega;
+    Mout[34,38] *= omega;
+    Mout[34,42] *= omega;
+    Mout[34,50] *= omega;
+    Mout[35,6] *= omega;
+    Mout[35,19] *= omega;
+    Mout[35,31] *= omega;
+    Mout[35,39] *= omega;
+    Mout[35,43] *= omega;
+    Mout[35,51] *= omega;
+    Mout[36,7] *= omega;
+    Mout[36,20] *= omega;
+    Mout[36,32] *= omega;
+    Mout[36,40] *= omega;
+    Mout[36,44] *= omega;
+    Mout[36,52] *= omega;
+    Mout[37,8] *= omega;
+    Mout[37,21] *= omega;
+    Mout[37,33] *= omega;
+    Mout[37,41] *= omega;
+    Mout[37,45] *= omega;
+    Mout[37,53] *= omega;
+    Mout[38,9] *= omega;
+    Mout[38,22] *= omega;
+    Mout[38,30] *= omega;
+    Mout[38,34] *= omega;
+    Mout[38,40] *= omega;
+    Mout[38,41] *= omega;
+    Mout[38,42] *= omega;
+    Mout[38,54] *= omega;
+    Mout[39,10] *= omega;
+    Mout[39,23] *= omega;
+    Mout[39,31] *= omega;
+    Mout[39,35] *= omega;
+    Mout[39,40] *= omega;
+    Mout[39,41] *= omega;
+    Mout[39,43] *= omega;
+    Mout[39,55] *= omega;
+    Mout[40,24] *= omega;
+    Mout[40,32] *= omega;
+    Mout[40,36] *= omega;
+    Mout[40,38] *= omega;
+    Mout[40,39] *= omega;
+    Mout[40,44] *= omega;
+    Mout[40,56] *= omega;
+    Mout[41,25] *= omega;
+    Mout[41,33] *= omega;
+    Mout[41,37] *= omega;
+    Mout[41,38] *= omega;
+    Mout[41,39] *= omega;
+    Mout[41,45] *= omega;
+    Mout[41,57] *= omega;
+    Mout[42,11] *= omega;
+    Mout[42,26] *= omega;
+    Mout[42,30] *= omega;
+    Mout[42,34] *= omega;
+    Mout[42,38] *= omega;
+    Mout[42,44] *= omega;
+    Mout[42,45] *= omega;
+    Mout[42,58] *= omega;
+    Mout[43,12] *= omega;
+    Mout[43,27] *= omega;
+    Mout[43,31] *= omega;
+    Mout[43,35] *= omega;
+    Mout[43,39] *= omega;
+    Mout[43,44] *= omega;
+    Mout[43,45] *= omega;
+    Mout[43,59] *= omega;
+    Mout[44,32] *= omega;
+    Mout[44,36] *= omega;
+    Mout[44,40] *= omega;
+    Mout[44,42] *= omega;
+    Mout[44,43] *= omega;
+    Mout[44,60] *= omega;
+    Mout[45,13] *= omega;
+    Mout[45,33] *= omega;
+    Mout[45,37] *= omega;
+    Mout[45,41] *= omega;
+    Mout[45,42] *= omega;
+    Mout[45,43] *= omega;
+    Mout[45,61] *= omega;
+    Mout[46,1] *= omega;
+    Mout[46,14] *= omega;
+    Mout[46,30] *= omega;
+    Mout[46,50] *= omega;
+    Mout[46,54] *= omega;
+    Mout[46,58] *= omega;
+    Mout[47,2] *= omega;
+    Mout[47,15] *= omega;
+    Mout[47,31] *= omega;
+    Mout[47,51] *= omega;
+    Mout[47,55] *= omega;
+    Mout[47,59] *= omega;
+    Mout[48,3] *= omega;
+    Mout[48,16] *= omega;
+    Mout[48,32] *= omega;
+    Mout[48,52] *= omega;
+    Mout[48,56] *= omega;
+    Mout[48,60] *= omega;
+    Mout[49,4] *= omega;
+    Mout[49,17] *= omega;
+    Mout[49,33] *= omega;
+    Mout[49,53] *= omega;
+    Mout[49,57] *= omega;
+    Mout[49,61] *= omega;
+    Mout[50,5] *= omega;
+    Mout[50,18] *= omega;
+    Mout[50,34] *= omega;
+    Mout[50,46] *= omega;
+    Mout[50,54] *= omega;
+    Mout[50,58] *= omega;
+    Mout[51,6] *= omega;
+    Mout[51,19] *= omega;
+    Mout[51,35] *= omega;
+    Mout[51,47] *= omega;
+    Mout[51,55] *= omega;
+    Mout[51,59] *= omega;
+    Mout[52,7] *= omega;
+    Mout[52,20] *= omega;
+    Mout[52,36] *= omega;
+    Mout[52,48] *= omega;
+    Mout[52,56] *= omega;
+    Mout[52,60] *= omega;
+    Mout[53,8] *= omega;
+    Mout[53,21] *= omega;
+    Mout[53,37] *= omega;
+    Mout[53,49] *= omega;
+    Mout[53,57] *= omega;
+    Mout[53,61] *= omega;
+    Mout[54,9] *= omega;
+    Mout[54,22] *= omega;
+    Mout[54,38] *= omega;
+    Mout[54,46] *= omega;
+    Mout[54,50] *= omega;
+    Mout[54,56] *= omega;
+    Mout[54,57] *= omega;
+    Mout[54,58] *= omega;
+    Mout[55,10] *= omega;
+    Mout[55,23] *= omega;
+    Mout[55,39] *= omega;
+    Mout[55,47] *= omega;
+    Mout[55,51] *= omega;
+    Mout[55,56] *= omega;
+    Mout[55,57] *= omega;
+    Mout[55,59] *= omega;
+    Mout[56,24] *= omega;
+    Mout[56,40] *= omega;
+    Mout[56,48] *= omega;
+    Mout[56,52] *= omega;
+    Mout[56,54] *= omega;
+    Mout[56,55] *= omega;
+    Mout[56,60] *= omega;
+    Mout[57,25] *= omega;
+    Mout[57,41] *= omega;
+    Mout[57,49] *= omega;
+    Mout[57,53] *= omega;
+    Mout[57,54] *= omega;
+    Mout[57,55] *= omega;
+    Mout[57,61] *= omega;
+    Mout[58,11] *= omega;
+    Mout[58,26] *= omega;
+    Mout[58,42] *= omega;
+    Mout[58,46] *= omega;
+    Mout[58,50] *= omega;
+    Mout[58,54] *= omega;
+    Mout[59,12] *= omega;
+    Mout[59,27] *= omega;
+    Mout[59,43] *= omega;
+    Mout[59,47] *= omega;
+    Mout[59,51] *= omega;
+    Mout[59,55] *= omega;
+    Mout[60,28] *= omega;
+    Mout[60,44] *= omega;
+    Mout[60,48] *= omega;
+    Mout[60,52] *= omega;
+    Mout[60,56] *= omega;
+    Mout[61,13] *= omega;
+    Mout[61,29] *= omega;
+    Mout[61,45] *= omega;
+    Mout[61,49] *= omega;
+    Mout[61,53] *= omega;
+    Mout[61,57] *= omega;
+
+    // Re-calculate diagonals
+    for(i in 1:61){
+      Mout[i, i] = 0;
+      Mout[i, i] = -dot_product(Mout[i, ], pimult[i, ]);
     }
-    
-    return sum(lv);
+
+    return Mout;
   }
+  
+  // Replicates mydouble type arithmetic from Danny's code
+  real sillyplus(real x, real y) {
+    real a;
+    if(x == 0){
+      a = y;
+    }else if(y == 0){
+      a = x;
+    }else{
+      real diff = x - y;
+      if(diff == 0){
+        a = log(2.0) + x;
+      }else if(diff < 0){
+        a = y + log(1.0 + exp(diff));
+      }else{
+        a = x + log(1.0 + exp(-diff));
+      }
+    }
+    return a;
+  }
+  
+  
+  real sillymult(real x, real y) {
+    real a;
+    // if(y == 0 || x == 0){
+      // a = 0;
+      // }else{
+        a = x + y;
+        // }
+        return a;
+  }
+  
+  // real partial_sum_constant(array[] int X_slice,
+  // int start, int end,
+  // array[] matrix obs_vec,
+  // vector N,
+  // matrix muti,
+  // matrix lgmuti,
+  // vector ttheta,
+  // vector ltheta,
+  // vector lgtheta) {
+  //   
+  //   vector[61] logvec;
+  //   vector[end - start + 1] lv;
+  //   int z = 1; 
+  //   real sqp, mABs, n, ll;
+  //   row_vector[61] mAB;
+  //   row_vector[61] obs;
+  //   
+  //   for(loc in start:end){
+  //     // Likelihood calculation
+  //     profile("likelihood"){
+  //       // obs = to_row_vector(X[loc,]);
+  //       // n = sum(obs);
+  //       for(i in 1:61){
+  //         // mAB = m_AB[i, ]; 
+  //         // mABs = sum(m_AB[i, ]);
+  //         // // Dirichlet-multinomial lpmf for this ancestral codon
+  //         // ll = - (lgamma(mABs + n) - lgamma(mABs));
+  //         // for(k in 1:61){
+  //           //   ll += (lgamma(mAB[k] + obs[k]) - lgamma(mAB[k]));
+  //           // }
+  //           // logvec[i] = ll;
+  //           // logvec[i] = dirichlet_multinomial_lpmf(X[loc, ] | to_vector(m_AB[i, ]));
+  //       }
+  //     }
+  //     // Sum likelihood over all ancestors
+  //     lv[z] = sum(logvec);
+  //     z += 1;
+  //   }
+  //   
+  //   return sum(lv);
+  // }
   
   // real partial_sum(array[] int X_slice,
   // int start, int end,

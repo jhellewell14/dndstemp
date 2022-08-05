@@ -17,6 +17,7 @@ transformed data{
   array[l] vector[61] obs_vec;
   vector[61] ones = rep_vector(1, 61);
   matrix[61, 61] pimat = diag_matrix(sqrt(to_vector(pi_eq)));
+  matrix[61, 61] pimatinv = diag_matrix(inv(sqrt(to_vector(pi_eq))));
   matrix[61, 61] pimult;
   
   for(j in 1:61){
@@ -76,7 +77,7 @@ generated quantities {
   
   // Calculate substitution rate matrix not under neutrality
   // here you can multiply the relevant elements by new omega value and recalculate the diagonal
-  mutmat = build_A(kappa, omega, pimat, pimult); 
+  mutmat = update_A(A, omega, pimult);
   
   // Eigenvectors/values of substitution rate matrix
   V = eigenvectors_sym(mutmat);
@@ -89,12 +90,17 @@ generated quantities {
     m_AB[, i] = rows_dot_product(Va, V_inv);
   }
   
-  // Multiply by equilibrium frequencies and normalise
+  // Multiply by equilibrium frequencies
+  // m_AB[, i] /= sqrt(pi_eq[i]);
+  // m_AB[i, ] *= sqrt(pi_eq[i]);
+  m_AB = (m_AB' * pimatinv)' * pimat;
+  
+  // Normalise - m_AB / m_AA
   for(i in 1:61){
-    sqp = sqrt(pi_eq[i]);
-    m_AB[, i] /= sqp;
-    m_AB[i, ] *= sqp;
-    m_AB[, i] /= m_AB[i, i]; // equivalent to m_AB / m_AA
+    // sqp = sqrt(pi_eq[i]);
+    // m_AB[, i] /= sqp;
+    // m_AB[i, ] *= sqp;
+    m_AB[, i] /= m_AB[i, i]; 
     m_AB[i, i] = 1.0e-06; // This happens in the C code but not mentioned elsewhere
     for(j in 1:61){if(m_AB[i, j] < 0) m_AB[i, j] = 1.0e-06;}
   }
