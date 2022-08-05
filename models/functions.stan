@@ -597,8 +597,8 @@ functions {
     for(i in 1:61) {
       sqp = sqrt(pi_eq[i]);
       for(j in 1:61) {
-        M[i][j] *= sqp;
-        M[j][i] *= sqp;
+        M[i, j] *= sqp;
+        M[j, i] *= sqp;
       }
     }
     
