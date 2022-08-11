@@ -21,57 +21,6 @@ tripletNames = names(geneticCode)
 tripletNames_noSTO <- tripletNames[-c(11, 12, 15)]
 triprev <- rev(tripletNames_noSTO)
 
-# prot <- unlist(geneticCode)[-c(11, 12, 15)]
-
-# mdt <- as.data.table(expand.grid(tripletNames_noSTO, tripletNames_noSTO))
-# mdt <- mdt[, .(c1 = Var1, c2 = Var2)]
-# mdt$p1 <- prot[mdt$c1]
-# mdt$p2 <- prot[mdt$c2]
-# 
-# mdt[, trs := get_mut(c1, c2), c("c1", "c2")]
-# mdt$j <- match(mdt$c1, tripletNames_noSTO)
-# mdt$i <- match(mdt$c2, tripletNames_noSTO)
-# 
-# mdt[, ns := ifelse((c1 != c2) & (p1 == p2), "S", 0)]
-# mdt[, ns := ifelse((c1 != c2) & (p1 != p2), "NS", ns)]
-# mdt[, el := ifelse((trs == "transversion" & ns == "S"), "1", "0")]
-# mdt[, el := ifelse(trs == "transversion" & ns == "NS", "omega", el)]
-# mdt[, el := ifelse(trs == "transition" & ns == "S", "kappa", el)]
-# mdt[, el := ifelse(trs == "transition" & ns == "NS", "omega * kappa", el)]
-# 
-# res <- mdt[trs != "0" & el != 0]
-# 
-# sink("output.txt")
-# # M[1,2] = kappa;
-# for(i in 1:nrow(res)){
-#   cat(paste0("M[",res$i[i],",",res$j[i],"] = ",res$el[i], ";"), append = TRUE, fill = TRUE)
-# }
-# sink()
-# 
-# mout <- matrix(0, 61, 61)
-# for(i in 1:nrow(res)){
-#   mout[res$i[i], res$j[i]] = res$ns[i]
-# }
-# plot(mout)
-# 
-# get_mut <- function(c1, c2){
-#   cc1 <- strsplit(x = as.character(c1), split = "")[[1]]
-#   cc2 <- strsplit(x = as.character(c2), split = "")[[1]]
-#   
-#   n_mut <- sum(cc1 != cc2)
-#   if(n_mut > 1){
-#     return("0")
-#   }
-#   if(n_mut == 0){
-#     return("diag")
-#   }
-#   
-#   mut <- c(cc1[cc1 != cc2], cc2[cc1 != cc2])
-#   tv <- ifelse(all(mut %in% c("C", "T")) | all(mut %in% c("A", "G")), "transition", "transversion")
-#   return(tv)
-# }
-
-
 generate_data <- function(data){
   
   # Chop each sequence into codons
@@ -140,19 +89,12 @@ extract_res <- function(fit, mod_name = "unnamed"){
 }
 
 initfn <- function(){
-  list(kappa = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 1),
-       mu = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 1),
-       omega = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 1),
-       omega_loc = rnorm(n = 1, mean = 0, sd = 1),
-       omega_scale = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
-       mu_loc = rnorm(n = 1, mean = 0, sd = 1),
-       mu_scale = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
-       theta = runif(1, 0.01, 0.2),
-       kappa_loc = rnorm(n = 1, mean = 0, sd = 1),
-       kappa_scale = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1))
+  list(kap = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
+       th = rtruncnorm(n = 1, a = 0, mean = 0, sd = 0.1),
+       om_raw = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 1),
+       om_mean = rnorm(n = 1, mean = 0, sd = 1),
+       om_sd = rtruncnorm(n = 1, a = 0, mean = 0, sd = 0.1))
 }
-
-
 
 plot_mutations <- function(mat){
   
@@ -235,16 +177,16 @@ plot_dnds <- function(mat){
   return(out)
 }
 
-an_3nt <- function(z){
-  nt <- c("A", "C", "G", "T")
-  stop_codons <- c("TAA", "TAG", "TGA")
-  out <- unique(c(paste0(nt, substr(z, 2, 3)),
-                  paste0(substr(z, 1, 2), nt),
-                  paste0(substr(z, 1, 1), 
-                         nt, 
-                         substr(z, 3, 3))))
-  out <- out[!(out %in% stop_codons)]
-  return(out)
-}
+# an_3nt <- function(z){
+#   nt <- c("A", "C", "G", "T")
+#   stop_codons <- c("TAA", "TAG", "TGA")
+#   out <- unique(c(paste0(nt, substr(z, 2, 3)),
+#                   paste0(substr(z, 1, 2), nt),
+#                   paste0(substr(z, 1, 1), 
+#                          nt, 
+#                          substr(z, 3, 3))))
+#   out <- out[!(out %in% stop_codons)]
+#   return(out)
+# }
 
 
