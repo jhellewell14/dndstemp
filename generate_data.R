@@ -92,8 +92,9 @@ initfn <- function(){
   list(kap = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
        th = rtruncnorm(n = 1, a = 0, mean = 0, sd = 0.1),
        om_raw = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 1),
-       om_mean = rnorm(n = 1, mean = 0, sd = 1),
-       om_sd = rtruncnorm(n = 1, a = 0, mean = 0, sd = 0.1))
+       omega = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 1),
+       om_mean = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
+       om_sd = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1))
 }
 
 plot_mutations <- function(mat){

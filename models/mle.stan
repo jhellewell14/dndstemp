@@ -1,33 +1,36 @@
-#include functions.stan
+functions{
+#include functions/PDRM_mat.stan
+#include functions/deprecated.stan
+}
 
 data {
   row_vector[61] pi_eq;
   int <lower = 1> l; // gene length
-  // int loc;
   array[l, 61] int X; // codon frequencies at each locus in the gene
-  real <lower = 0> mu;
-  real <lower = 0> theta;
-  // real <lower = 0> theta;
-  real <lower = 0> kappa;
-  real <lower = 0> omega;
 }
 
+transformed data {
+  matrix[61, 61] pimat = diag_matrix(sqrt(to_vector(pi_eq)));
+  matrix[61, 61] pimatinv = diag_matrix(inv(sqrt(to_vector(pi_eq))));
+  matrix[61, 61] pimult;
+  
+  for(j in 1:61){
+    for(i in 1:61){
+      pimult[i, j] = sqrt(pi_eq[j] / pi_eq[i]);
+    }
+  }
+}
+ 
 parameters {
-  // real <lower = 0> mu;
-  // real <lower = 0> kappa;
-  // real <lower = 0> omega;
-  // real <lower = 0> theta;
+  real <lower = 0> kappa;
+  real <lower = 0> omega;
+  real <lower = 0> theta;
 }
 
 model {
-  
-}
-
-generated quantities {
-  matrix[61, 61] mutmat = PDRM(mu, kappa, omega, pi_eq);
+  matrix[61, 61] mutmat;
   matrix[61, 61] V;
   matrix[61, 61] V_inv;
-  // vector[61] D;
   vector[61] E;
   vector[61] Ve;
   matrix[61, 61] Va;
@@ -36,20 +39,16 @@ generated quantities {
   real m_AA;
   real sqp;
   real meanrate = 0;
-  // real mABs;
   real scale;
   vector[l] likpos = rep_vector(0, l);
-  real lik = 0; // log(1)
   real likposanc;
   real cti;
   real phi;
   real N;
   real muti;
   real ttheta;
-  // int pos = 1;
   
-  
-  A = build_A(1, kappa, 1, pi_eq);
+  A = build_A(kappa, 1, pimat, pimult);
   
   for(i in 1:61){
     meanrate -= pi_eq[i] * A[i, i];
@@ -57,7 +56,7 @@ generated quantities {
   scale = (theta / 2.0) / meanrate;
   // Calculate substitution rate matrix
   // mutmat = PDRM(mu, kap, om, pi_eq);
-  mutmat = build_A(1, kappa, omega, pi_eq); 
+  mutmat = update_A(A, omega, pimult); 
   
   // Eigenvectors/values of substitution rate matrix
   V = eigenvectors_sym(mutmat);
@@ -79,7 +78,7 @@ generated quantities {
     m_AB[i, ] /= sqp;
     m_AB[, i] *= sqp;
   }
-  
+
   // Normalise by m_AA
   for(i in 1:61){
     m_AA = m_AB[i, i];
@@ -127,12 +126,10 @@ generated quantities {
       
       likposanc += lgamma(ttheta) - lgamma(N + ttheta) - log(N + ttheta) + log(ttheta);
       likpos[pos] = sillyplus(likpos[pos], likposanc);
-      // likpos[pos] += likposanc;
     }
-   // likpos[pos] = sillymult(likpos[pos], phi);
+
    likpos[pos] += phi;
-   lik += likpos[pos];
+   // lik += likpos[pos];
+   target += likpos[pos];
   }
 }
-
-
