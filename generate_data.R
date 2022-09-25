@@ -21,7 +21,7 @@ tripletNames = names(geneticCode)
 tripletNames_noSTO <- tripletNames[-c(11, 12, 15)]
 triprev <- rev(tripletNames_noSTO)
 
-generate_data <- function(data){
+generate_data <- function(data, cores = 1){
   
   # Chop each sequence into codons
   res <- lapply(X = data$seq, 
@@ -54,6 +54,26 @@ generate_data <- function(data){
   out_list$N <- rowSums(out_list$X)
   out_list$pi_eq <- rep(1 / 61, 61)
   out_list$grainsize <- 1
+  
+  ## Shard maths
+  nshards <- cores
+  out_list$M <- nshards
+  ncodon <- out_list$l
+  base_n <- floor(ncodon/ nshards)
+  spare <- ncodon - (nshards * base_n)
+  n_per_shard <- c(rep(base_n + 1, spare), rep(base_n, nshards - spare))
+  
+  shard_starts <- 1
+  shard_ends <- n_per_shard[1]
+  for(i in 2:nshards){
+    shard_starts[i] <- shard_ends[i - 1] + 1
+    shard_ends[i] <- shard_starts[i] + n_per_shard[i] - 1
+  }
+
+  out_list$shard_starts <- shard_starts
+  out_list$shard_ends <- shard_ends
+  out_list$n_per_shard <- n_per_shard
+  out_list$max_per_shard <- max(n_per_shard)
   
   return(out_list)
 }
@@ -89,12 +109,22 @@ extract_res <- function(fit, mod_name = "unnamed"){
 }
 
 initfn <- function(){
-  list(kap = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
-       th = rtruncnorm(n = 1, a = 0, mean = 0, sd = 0.1),
-       om_raw = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 1),
-       omega = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 1),
+  out <- list(kap = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
+       th = rnorm(1, log(0.1), 1),
+       alp = rnorm(1, log(0.1), 1),
+       bet = rnorm(1, log(0.1), 1),
+       gam = rnorm(1, log(0.1), 1),
+       del = rnorm(1, log(0.1), 1),
+       eps = rnorm(1, log(0.1), 1),
+       et = rnorm(1, log(0.1), 1),
+       lambda = runif(1, 0, 1),
+       # om_raw = rnorm(n = data_list$l, mean = -1, sd = 0.25),
+       om_raw = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 0.1),
+       omega = rtruncnorm(n = data_list$l, a = 0, mean = 0, sd = 0.5),
        om_mean = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1),
        om_sd = rtruncnorm(n = 1, a = 0, mean = 0, sd = 1))
+  out$lambda[2] <- 1 - out$lambda[1]
+  return(out)
 }
 
 plot_mutations <- function(mat){
