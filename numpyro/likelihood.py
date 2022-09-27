@@ -578,6 +578,7 @@ def likelihood(obs_vec, obs_mat, N, l, theta, omega, pi_eq, lp, pimat, pimult,
                pimatinv, alpha, beta, gamma, delta, epsilon, eta):
 
     # Calculate substitution rate matrix under neutrality
+    # TODO can this be moved out to model function?
     A = build_GTR(alpha, beta, gamma, delta, epsilon, eta, 1, pimat, pimult)
 
     meanrate = -jnp.dot(jnp.diagonal(A), pi_eq)
