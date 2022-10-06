@@ -542,6 +542,9 @@ def build_GTR(alpha, beta, gamma, delta, epsilon, eta, omega, pimat, pimult):
 
     # Compute the diagonal
     index = jnp.arange(0, 61, 1, jnp.uint16)
+    # I think this might be the same as
+    # M += jnp.diag(jnp.einsum('ij,ij->i', M, pi_mult))
+    # but check this doesn't add loads of zeros
     # check https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.fori_loop.html
     for i in range(61):
         # M = M.at[i, i].set(-jnp.dot(M[i, :], pimult[i, :]))
@@ -574,8 +577,16 @@ def transforms(X, pi_eq):
 
     return N, l, lp, pimat, pimatinv, pimult, obs_mat, obs_vec
 
+# data at each site is
+# obs_vec: vector of length 61 with counts
+# obs_mat: 61x61 matrix with repeat(obs_vec, 61) [repeated along rows, so a column is invariant]
+
 def likelihood(obs_vec, obs_mat, N, l, theta, omega, pi_eq, lp, pimat, pimult,
                pimatinv, alpha, beta, gamma, delta, epsilon, eta):
+
+    # TODO This can be precomputed in transforms, will be of length N
+    Np = N.at[pos].get()
+    phi = lgamma(Np + 1) - jnp.sum(lgamma(obs_vec.at[pos].get() + 1))
 
     # Calculate substitution rate matrix under neutrality
     # TODO can this be moved out to model function?
@@ -588,72 +599,72 @@ def likelihood(obs_vec, obs_mat, N, l, theta, omega, pi_eq, lp, pimat, pimult,
 
     # Calculate substitution rate matrix
     scale = (theta / 2.0) / meanrate
-    # TODO replace this with build_GTR/update_GTR
-    mutmat = build_GTR(alpha, beta, gamma, delta, epsilon, eta, omega, pimat, pimult)
+    # TODO fix this loop, all needs to be over codon ('pos' in stan code)
+    for l in range(N):
+        # TODO replace this with build_GTR/update_GTR
+        mutmat = build_GTR(alpha, beta, gamma, delta, epsilon, eta, omega, pimat, pimult)
 
-    V, Ve = jnp.linalg.eig(mutmat)
-    E = 1 / (1 - 2 * scale * Ve)
-    V_inv = jnp.matmul(V, jnp.diag(E))
+        V, Ve = jnp.linalg.eig(mutmat)
+        E = 1 / (1 - 2 * scale * Ve)
+        V_inv = jnp.matmul(V, jnp.diag(E))
 
-    # Create m_AB for each ancestral codon
-    m_AB = jnp.zeros((61, 61))
-    index = jnp.arange(0, 61, 1, jnp.uint16)
-    #sqp = jnp.sqrt(pi_eq)
-    for i in range(61):
-        # Va = rep_matrix(row(V, i), 61);
-        Va = jnp.reshape(jnp.repeat(jnp.take(V, index), 61), (61, 61)) # Not sure if this is repeat or tile
-        index += 61
-        # m_AB[i, ] = to_row_vector(rows_dot_product(Va, V_inv));
-        # Possible with jax.vmap?
-        # row_sum_fn = jax.vmap(lambda x, y: jnp.vdot(x, y), (1, 1), 0)
-        row = jnp.einsum('ij,ij->i', Va, V_inv)
-        # If using option 1 below
-        # row = jnp.divide(row, sqp.at[i].get())
-        dynamic_update_slice_in_dim(m_AB, row, i, 0)
+        # Create m_AB for each ancestral codon
+        m_AB = jnp.zeros((61, 61))
+        index = jnp.arange(0, 61, 1, jnp.uint16)
+        #sqp = jnp.sqrt(pi_eq)
+        for i in range(61):
+            # Va = rep_matrix(row(V, i), 61);
+            # Va should be matrix where rows are repeats of row i of V
+            Va = jnp.reshape(jnp.repeat(jnp.take(V, index), 61), (61, 61)) # Not sure if this is repeat or tile
+            index += 61
+            # m_AB[i, ] = to_row_vector(rows_dot_product(Va, V_inv));
+            # Possible with jax.vmap?
+            # row_sum_fn = jax.vmap(lambda x, y: jnp.vdot(x, y), (1, 1), 0)
+            row = jnp.einsum('ij,ij->i', Va, V_inv)
+            # If using option 1 below
+            # row = jnp.divide(row, sqp.at[i].get())
+            dynamic_update_slice_in_dim(m_AB, row, i, 0)
 
-    # Add equilibrium frequencies (option 1)
-    #for i in range(61):
-    #    col = jnp.multiply(dynamic_slice_in_dim(m_AB, (0, i), 61), sqp.at[i].get())
-    #    dynamic_update_slice_in_dim(m_AB, col, i, 1)
+        # Add equilibrium frequencies (option 1)
+        #for i in range(61):
+        #    col = jnp.multiply(dynamic_slice_in_dim(m_AB, (0, i), 61), sqp.at[i].get())
+        #    dynamic_update_slice_in_dim(m_AB, col, i, 1)
 
-    # Add equilibrium frequencies (option 2)
-    m_AB = jnp.matmul(jnp.matmul(m_AB.T, pimatinv).T, pimat)
+        # Add equilibrium frequencies (option 2)
+        m_AB = jnp.matmul(jnp.matmul(m_AB.T, pimatinv).T, pimat)
 
-    # Normalise by m_AA
-    m_AA = jnp.reshape(jnp.repeat(jnp.diag(m_AB), 61), (61, 61)) # Creates matrix with diagonals copied along each row
-    m_AB = jnp.maximum(jnp.divide(m_AB, m_AA) - jnp.eye(61, 61), 1.0e-06) # Makes min value 1e-6 (and sets diagonal, as -I makes this 0)
+        # Normalise by m_AA
+        m_AA = jnp.reshape(jnp.repeat(jnp.diag(m_AB), 61), (61, 61)) # Creates matrix with diagonals copied along each row
+        m_AB = jnp.maximum(jnp.divide(m_AB, m_AA) - jnp.eye(61, 61), 1.0e-06) # Makes min value 1e-6 (and sets diagonal, as -I makes this 0)
 
-    # Original C
-    # for(i in 1:61){
-    #     m_AA = m_AB[i, i];
-    #     for(j in 1:61){
-    #     if(j != i){
-    #         m_AB[i, j] /= m_AA;
-    #     }
-    #     if(m_AB[i, j] < 0){
-    #         m_AB[i, j] = 1.0e-06;
-    #     }
-    #     }
-    #     m_AB[i, i] = 1.0e-06;
-    # }
+        # Original C
+        # for(i in 1:61){
+        #     m_AA = m_AB[i, i];
+        #     for(j in 1:61){
+        #     if(j != i){
+        #         m_AB[i, j] /= m_AA;
+        #     }
+        #     if(m_AB[i, j] < 0){
+        #         m_AB[i, j] = 1.0e-06;
+        #     }
+        #     }
+        #     m_AB[i, i] = 1.0e-06;
+        # }
 
-    # Likelihood calculation
+        # Likelihood calculation
 
-    # Parts shared over all positions (at least while omega is fixed)
-    muti = m_AB + jnp.eye(61, 61)
-    lgmuti = lgamma(muti)
-    # ttheta = m_AB * ones; # I think this is rowSum()?
-    ttheta = jnp.sum(m_AB, 0)
-    ltheta = jnp.log(ttheta)
-    lgtheta = lgamma(ttheta)
+        # Parts shared over all positions (at least while omega is fixed)
 
-    lik = 0
-    for pos in range(l):
-        # Calculate parts same for all ancestors
-        Np = N.at[pos].get()
-        phi = lgamma(Np + 1) - jnp.sum(lgamma(obs_vec.at[pos].get() + 1));
 
-        poslp = lgtheta - lgamma(Np + ttheta) - jnp.log(Np + ttheta) + ltheta;
+        lik = 0
+        muti = m_AB + jnp.eye(61, 61)
+        lgmuti = lgamma(muti)
+        # ttheta = m_AB * ones; # I think this is rowSum()?
+        ttheta = jnp.sum(m_AB, 0)
+        ltheta = jnp.log(ttheta)
+        lgtheta = lgamma(ttheta)
+
+        poslp = lgtheta - lgamma(Np + ttheta) - jnp.log(Np + ttheta) + ltheta
 
         gam_mat = lgamma(obs_mat[pos] + muti) - lgmuti
 
